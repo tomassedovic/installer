@@ -134,6 +134,10 @@ type OpenStackPlatform struct {
 	// Cloud
 	// Name of OpenStack cloud to use from clouds.yaml
 	Cloud string `json:"cloud"`
+
+	// ExternalNetwork
+	// The OpenStack external network to be used for installation.
+	ExternalNetwork string `json:"externalNetwork"`
 }
 
 // LibvirtPlatform stores all the global configuration that

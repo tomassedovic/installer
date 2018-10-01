@@ -255,6 +255,25 @@ func (a *Platform) openstackPlatform() (*asset.State, error) {
 		return nil, err
 	}
 	platform.Cloud = string(cloud.Contents[0].Data)
+	prompt4 := asset.UserProvided{
+		Question: &survey.Question{
+			Prompt: &survey.Select{
+				Message: "ExternalNetwork",
+				Help:    "The OpenStack external network to be used for installation.",
+			},
+			Validate: survey.ComposeValidators(survey.Required, func(ans interface{}) error {
+				//value := ans.(string)
+				//FIXME(shadower) add some validation here
+				return nil
+			}),
+		},
+		EnvVarName: "OPENSHIFT_INSTALL_OPENSTACK_EXTERNAL_NETWORK",
+	}
+	ext_net, err := prompt4.Generate(nil)
+	if err != nil {
+		return nil, err
+	}
+	platform.ExternalNetwork = string(ext_net.Contents[0].Data)
 
 	data, err := json.Marshal(platform)
 	if err != nil {

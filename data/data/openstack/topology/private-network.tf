@@ -47,10 +47,15 @@ resource "openstack_networking_port_v2" "bootstrap_port" {
   }
 }
 
+data "openstack_networking_network_v2" "external_network" {
+  name     = "${var.external_network}"
+  external = true
+}
+
 resource "openstack_networking_router_v2" "openshift-external-router" {
   name                = "openshift-external-router"
   admin_state_up      = true
-  external_network_id = "${var.external_network}"
+  external_network_id = "${data.openstack_networking_network_v2.external_network.id}"
 }
 
 resource "openstack_networking_router_interface_v2" "masters_router_interface" {

@@ -224,6 +224,7 @@ func ConvertInstallConfigToTFVars(cfg *types.InstallConfig, bootstrapIgn string,
 			NetworkCIDRBlock: cfg.Platform.OpenStack.NetworkCIDRBlock,
 		}
 		cluster.OpenStack.Credentials.Cloud = cfg.Platform.OpenStack.Cloud
+		cluster.OpenStack.ExternalNetwork = cfg.Platform.OpenStack.ExternalNetwork
 	}
 
 	for _, m := range cfg.Machines {
