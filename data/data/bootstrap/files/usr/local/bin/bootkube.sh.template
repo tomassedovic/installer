@@ -15,6 +15,34 @@ KUBE_SCHEDULER_OPERATOR_IMAGE=$(podman run --rm {{.ReleaseImage}} image cluster-
 OPENSHIFT_HYPERSHIFT_IMAGE=$(podman run --rm {{.ReleaseImage}} image hypershift)
 OPENSHIFT_HYPERKUBE_IMAGE=$(podman run --rm {{.ReleaseImage}} image hyperkube)
 
+LOCAL_IP=`hostname  -I | cut -f1 -d' '`
+
+echo "NOTE SHADOWER: adding etcd entries to /etc/hosts..."
+for i in 0 1 2
+    do echo $(dig +short ostest-master-$i) ostest-etcd-$i.shiftstack.com >> /etc/hosts
+done
+
+echo "NOTE SHADOWER: running bootstrap dns..."
+trap "podman rm --force bootstrap-dns" ERR
+podman run --name bootstrap-dns -t -i --detach -p 53:53/tcp -p 53:53/udp --cap-add=NET_ADMIN docker.io/andyshinn/dnsmasq:latest \
+    --log-facility=- --log-queries --no-resolv --server=10.0.0.2 \
+    --srv-host=_etcd-server-ssl._tcp.ostest.shiftstack.com,ostest-etcd-0.shiftstack.com,2380,0,10 \
+    --srv-host=_etcd-server-ssl._tcp.ostest.shiftstack.com,ostest-etcd-1.shiftstack.com,2380,0,10 \
+    --srv-host=_etcd-server-ssl._tcp.ostest.shiftstack.com,ostest-etcd-2.shiftstack.com,2380,0,10
+
+
+# We need to wait until our dns is ready to serve
+# before we modify `/etc/resolv.conf`
+n=0
+until [ $n -ge 5 ]
+do
+   echo "1" | nc localhost 53 && break  # substitute your command here
+   n=$[$n+1]
+   sleep 5
+done
+echo "nameserver $LOCAL_IP" > /etc/resolv.conf
+
+
 mkdir --parents ./{bootstrap-manifests,manifests}
 
 if [ ! -d cvo-bootstrap ]

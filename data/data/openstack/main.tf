@@ -47,6 +47,7 @@ module "masters" {
   master_sg_ids  = "${concat(var.tectonic_openstack_master_extra_sg_ids, list(module.topology.master_sg_id))}"
   subnet_ids     = "${module.topology.master_subnet_ids}"
   user_data_ign  = "${var.ignition_master}"
+  bootstrap_port_fixed_ip = "${module.topology.bootstrap_port_fixed_ip}"
 }
 
 # TODO(shadower) add a dns module here
