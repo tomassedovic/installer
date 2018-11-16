@@ -30,10 +30,13 @@ module "lb" {
   swift_container   = "${openstack_objectstorage_container_v1.tectonic.name}"
   cluster_name      = "${var.tectonic_cluster_name}"
   cluster_id        = "${var.tectonic_cluster_id}"
+  cluster_domain    = "${var.tectonic_base_domain}"
   image_name        = "${var.tectonic_openstack_base_image}"
   flavor_name       = "${var.tectonic_openstack_master_flavor_name}"
   ignition          = "${var.ignition_bootstrap}"
   lb_port_id        = "${module.topology.lb_port_id}"
+  master_ips        = "${module.topology.master_ips}"
+  master_port_names = "${module.topology.master_port_names}"
 }
 
 module "bootstrap" {
@@ -46,6 +49,7 @@ module "bootstrap" {
   flavor_name       = "${var.tectonic_openstack_master_flavor_name}"
   ignition          = "${var.ignition_bootstrap}"
   bootstrap_port_id = "${module.topology.bootstrap_port_id}"
+  service_vm_fixed_ip = "${module.topology.service_vm_fixed_ip}"
 }
 
 module "masters" {
@@ -59,6 +63,7 @@ module "masters" {
   master_sg_ids  = "${concat(var.tectonic_openstack_master_extra_sg_ids, list(module.topology.master_sg_id))}"
   subnet_ids     = "${module.topology.master_subnet_ids}"
   user_data_ign  = "${var.ignition_master}"
+  service_vm_fixed_ip = "${module.topology.service_vm_fixed_ip}"
 }
 
 # TODO(shadower) add a dns module here

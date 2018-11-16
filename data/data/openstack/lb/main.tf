@@ -31,7 +31,32 @@ data "ignition_file" "haproxy_conf" {
     source {
       source = "data:,listen%20ostest-api-80%0D%0A%20%20%20%20bind%200.0.0.0%3A80%0D%0A%20%20%20%20mode%20tcp%0D%0A%20%20%20%20stats%20enable%0D%0A%20%20%20%20stats%20uri%20%2Fhaproxy%3Fstatus%0D%0A%20%20%20%20balance%20roundrobin%0D%0A%20%20%20%20server%20ostest-bootstrap%20ostest-bootstrap.shiftstack.com%3A80%20check%0D%0A%20%20%20%20server%20ostest-master-0%20ostest-master-0.shiftstack.com%3A80%20check%0D%0A%20%20%20%20server%20ostest-master-1%20ostest-master-1.shiftstack.com%3A80%20check%0D%0A%20%20%20%20server%20ostest-master-2%20ostest-master-2.shiftstack.com%3A80%20check%0D%0A%0D%0Alisten%20ostest-api-6443%0D%0A%20%20%20%20bind%200.0.0.0%3A6443%0D%0A%20%20%20%20mode%20tcp%0D%0A%20%20%20%20stats%20enable%0D%0A%20%20%20%20stats%20uri%20%2Fhaproxy%3Fstatus%0D%0A%20%20%20%20balance%20roundrobin%0D%0A%20%20%20%20server%20ostest-bootstrap%20ostest-bootstrap.shiftstack.com%3A6443%20check%0D%0A%20%20%20%20server%20ostest-master-0%20ostest-master-0.shiftstack.com%3A6443%20check%0D%0A%20%20%20%20server%20ostest-master-1%20ostest-master-1.shiftstack.com%3A6443%20check%0D%0A%20%20%20%20server%20ostest-master-2%20ostest-master-2.shiftstack.com%3A6443%20check%0D%0A%0D%0Alisten%20ostest-api-443%0D%0A%20%20%20%20bind%200.0.0.0%3A443%0D%0A%20%20%20%20mode%20tcp%0D%0A%20%20%20%20stats%20enable%0D%0A%20%20%20%20stats%20uri%20%2Fhaproxy%3Fstatus%0D%0A%20%20%20%20balance%20roundrobin%0D%0A%20%20%20%20server%20ostest-bootstrap%20ostest-bootstrap.shiftstack.com%3A443%20check%0D%0A%20%20%20%20server%20ostest-master-0%20ostest-master-0.shiftstack.com%3A443%20check%0D%0A%20%20%20%20server%20ostest-master-1%20ostest-master-1.shiftstack.com%3A443%20check%0D%0A%20%20%20%20server%20ostest-master-2%20ostest-master-2.shiftstack.com%3A443%20check%0D%0A%0D%0Alisten%20ostest-api-49500%0D%0A%20%20%20%20bind%200.0.0.0%3A49500%0D%0A%20%20%20%20mode%20tcp%0D%0A%20%20%20%20stats%20enable%0D%0A%20%20%20%20stats%20uri%20%2Fhaproxy%3Fstatus%0D%0A%20%20%20%20balance%20roundrobin%0D%0A%20%20%20%20server%20ostest-bootstrap%20ostest-bootstrap.shiftstack.com%3A49500%20check%0D%0A%20%20%20%20server%20ostest-master-0%20ostest-master-0.shiftstack.com%3A49500%20check%0D%0A%20%20%20%20server%20ostest-master-1%20ostest-master-1.shiftstack.com%3A49500%20check%0D%0A%20%20%20%20server%20ostest-master-2%20ostest-master-2.shiftstack.com%3A49500%20check"
     }
-} 
+}
+
+data "ignition_file" "openshift_hosts" {
+  filesystem = "root"
+  mode = "420"  // 0644
+  path = "/etc/openshift-hosts"
+  content {
+    content = <<EOF
+${replace(join("\n", formatlist("%s ${var.cluster_name}-etcd-%s.${var.cluster_domain}", var.master_ips, var.master_port_names)), "master-port-", "")}
+EOF
+  }
+}
+
+data "ignition_systemd_unit" "local_dns" {
+    name = "local-dns.service"
+      content = <<EOF
+[Unit]
+Description=Internal DNS server for running OpenShift on OpenStack
+
+[Service]
+ExecStart=/bin/podman run --name bootstrap-dns --rm -t -i -p 53:53/tcp -p 53:53/udp -v /etc/openshift-hosts:/etc/openshift-hosts:z --cap-add=NET_ADMIN docker.io/andyshinn/dnsmasq:latest --keep-in-foreground --log-facility=- --log-queries --no-resolv --addn-hosts=/etc/openshift-hosts --server=10.0.0.2 ${replace(join(" ", formatlist("--srv-host=_etcd-server-ssl._tcp.${var.cluster_name}.${var.cluster_domain},${var.cluster_name}-etcd-%s.${var.cluster_domain},2380,0,10", var.master_port_names)), "master-port-", "")}
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
 
 data "ignition_user" "core" {
     name = "core"
@@ -42,13 +67,15 @@ data "ignition_user" "core" {
 
 data "ignition_config" "config" {
   files = [
-    "${data.ignition_file.haproxy_conf.id}"
+    "${data.ignition_file.haproxy_conf.id}",
+    "${data.ignition_file.openshift_hosts.id}",
   ]
 
   systemd = [
       "${data.ignition_systemd_unit.haproxy_unit.id}",
+      "${data.ignition_systemd_unit.local_dns.id}",
   ]
- 
+
   users = [
       "${data.ignition_user.core.id}",
   ]
@@ -57,7 +84,7 @@ data "ignition_config" "config" {
 resource "openstack_objectstorage_object_v1" "lb_ignition" {
   container_name = "${var.swift_container}"
   name           = "load-balancer.ign"
-  content        = "${data.ignition_config.config.rendered}" 
+  content        = "${data.ignition_config.config.rendered}"
 }
 
 resource "openstack_objectstorage_tempurl_v1" "lb_ignition_tmpurl" {
