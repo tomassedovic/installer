@@ -24,6 +24,18 @@ provider "openstack" {
   version             = ">=1.6.0"
 }
 
+module "lb" {
+  source = "./lb"
+
+  swift_container   = "${openstack_objectstorage_container_v1.tectonic.name}"
+  cluster_name      = "${var.tectonic_cluster_name}"
+  cluster_id        = "${var.tectonic_cluster_id}"
+  image_name        = "${var.tectonic_openstack_base_image}"
+  flavor_name       = "${var.tectonic_openstack_master_flavor_name}"
+  ignition          = "${var.ignition_bootstrap}"
+  lb_port_id        = "${module.topology.lb_port_id}"
+}
+
 module "bootstrap" {
   source = "./bootstrap"
 

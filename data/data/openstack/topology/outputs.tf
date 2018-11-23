@@ -1,3 +1,7 @@
+output "lb_port_id" {
+  value = "${openstack_networking_port_v2.lb_port.id}"
+}
+
 output "bootstrap_port_id" {
   value = "${openstack_networking_port_v2.bootstrap_port.id}"
 }
