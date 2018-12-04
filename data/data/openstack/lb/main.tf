@@ -10,7 +10,19 @@ data "openstack_compute_flavor_v2" "bootstrap_flavor" {
 data "ignition_systemd_unit" "haproxy_unit" {
     name = "bootkube-haproxy.service"
     enabled = true
-    content = "[Service]\nType=oneshot\nExecStartPre=/sbin/setenforce 0\nExecStart=/bin/podman run -ti -d --name haproxy --net=host -v /etc/haproxy:/usr/local/etc/haproxy:ro docker.io/library/haproxy:1.7\n\n[Install]\nWantedBy=multi-user.target"
+    content = <<EOF
+[Unit]
+Description=Load balancer for the OpenShift services
+
+[Service]
+ExecStartPre=/sbin/setenforce 0
+ExecStart=/bin/podman run --name haproxy --rm -ti --net=host -v /etc/haproxy:/usr/local/etc/haproxy:ro docker.io/library/haproxy:1.7
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
 }
 
 data "ignition_file" "haproxy_conf" {
