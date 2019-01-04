@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 mkdir --parents /etc/kubernetes/{manifests,bootstrap-configs,bootstrap-manifests}
 
@@ -16,7 +16,8 @@ if ! release=$( podman inspect {{.ReleaseImage}} -f '{{"{{"}} index .RepoDigests
 	release="{{.ReleaseImage}}"
 fi
 
-MACHINE_CONFIG_OPERATOR_IMAGE=$(podman run --rm ${release} image machine-config-operator)
+#MACHINE_CONFIG_OPERATOR_IMAGE=$(podman run --rm ${release} image machine-config-operator)
+MACHINE_CONFIG_OPERATOR_IMAGE="docker://docker.io/tsedovic/mco:latest"
 MACHINE_CONFIG_CONTROLLER_IMAGE=$(podman run --rm ${release} image machine-config-controller)
 MACHINE_CONFIG_SERVER_IMAGE=$(podman run --rm ${release} image machine-config-server)
 MACHINE_CONFIG_DAEMON_IMAGE=$(podman run --rm ${release} image machine-config-daemon)
