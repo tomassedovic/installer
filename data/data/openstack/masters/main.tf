@@ -14,11 +14,6 @@ data "ignition_config" "master_ignition_config" {
 
   files = [
     "${data.ignition_file.master_ifcfg.id}",
-    "${data.ignition_file.master_hacks_script.id}",
-  ]
-
-  systemd = [
-    "${data.ignition_systemd_unit.master_hacks_service.id}",
   ]
 }
 
