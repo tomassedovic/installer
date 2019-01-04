@@ -10,7 +10,6 @@ import (
 
 	"github.com/openshift/installer/pkg/ipnet"
 	"github.com/gophercloud/utils/openstack/clientconfig"
-	"github.com/openshift/installer/pkg/asset"
 	"github.com/openshift/installer/pkg/types/openstack"
 	openstackvalidation "github.com/openshift/installer/pkg/types/openstack/validation"
 )
@@ -29,6 +28,7 @@ func Platform() (*openstack.Platform, error) {
 	}
 	// Sort cloudNames so we can use sort.SearchStrings
 	sort.Strings(cloudNames)
+	var cloudConfig *clientconfig.Cloud
 	var cloud string
 	err = survey.Ask([]*survey.Question{
 		{
@@ -42,8 +42,12 @@ func Platform() (*openstack.Platform, error) {
 				i := sort.SearchStrings(cloudNames, value)
 				if i == len(cloudNames) || cloudNames[i] != value {
 					return errors.Errorf("invalid cloud name %q, should be one of %+v", value, strings.Join(cloudNames, ", "))
+				} else {
+				clientOpts := new(clientconfig.ClientOpts)
+				clientOpts.Cloud = ans.(string)
+				cloudConfig, err = clientconfig.GetCloudFromYAML(clientOpts)
+					return err
 				}
-				return nil
 			}),
 		},
 	}, &cloud)
@@ -127,26 +131,6 @@ func Platform() (*openstack.Platform, error) {
 					return errors.Errorf("invalid network name %q, should be one of %+v", value, strings.Join(networkNames, ", "))
 				}
 				return nil
-			}),
-		},
-	}, &extNet)
-	if err != nil {
-		return nil, err
-	}
-
-	var cloudConfig *clientconfig.Cloud
-	cloud, err := asset.GenerateUserProvidedAsset(
-		"OpenStack Cloud",
-		&survey.Question{
-			Prompt: &survey.Input{
-				Message: "Cloud",
-				Help:    "The OpenStack cloud name from clouds.yaml.",
-			},
-			Validate: survey.ComposeValidators(survey.Required, func(ans interface{}) error {
-				clientOpts := new(clientconfig.ClientOpts)
-				clientOpts.Cloud = ans.(string)
-				cloudConfig, err = clientconfig.GetCloudFromYAML(clientOpts)
-				return err
 			}),
 		},
 	}, &extNet)
