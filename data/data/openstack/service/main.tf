@@ -153,6 +153,11 @@ data "ignition_file" "corefile" {
 
 ${length(var.lb_floating_ip) == 0 ? "" : "    file /etc/coredns/db.${var.cluster_domain} api.${var.cluster_domain} {\n    }\n"}
 
+    hosts {
+        ${replace(join("\n", formatlist("%s %s", var.master_ips, var.master_port_names)), "port-", "")}
+        fallthrough
+    }
+
 
     file /etc/coredns/db.${var.cluster_domain} _etcd-server-ssl._tcp.${var.cluster_domain} {
     }
