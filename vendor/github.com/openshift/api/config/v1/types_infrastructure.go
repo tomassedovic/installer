@@ -118,6 +118,10 @@ type PlatformStatus struct {
 	// GCP contains settings specific to the Google Cloud Platform infrastructure provider.
 	// +optional
 	GCP *GCPPlatformStatus `json:"gcp,omitempty"`
+
+	// OpenStack contains settings specific to the OpenStack infrastructure provider.
+	// +optional
+	OpenStack *OpenStackPlatformStatus `json:"openstack,omitempty"`
 }
 
 // AWSPlatformStatus holds the current status of the Amazon Web Services infrastructure provider.
@@ -139,6 +143,18 @@ type GCPPlatformStatus struct {
 
 	// region holds the region for new GCP resources created for the cluster.
 	Region string `json:"region"`
+}
+
+// OpenStackPlatformStatus holds the current status of the OpenStack infrastructure provider.
+type OpenStackPlatformStatus struct {
+	// ApiIntIp is an IP address managed by the OpenStack provider
+	// backing the internal `api-int` record.
+	ApiIntIp string `json:"apiIntIp,omitempty`
+
+	// NodeDnsIp is the IP address for the internal DNS used by the
+	// nodes. Unlike the one managed by the DNS operator, `NodeDnsIp`
+	// provides name resolution for the nodes themselves.
+	NodeDnsIp string `json:"nodeDnsIp,omitempty`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -6,6 +6,11 @@ variable "cluster_id" {
   type = string
 }
 
+variable "cluster_domain" {
+  type        = string
+  description = "The domain name of the cluster. All DNS records must be under this domain."
+}
+
 variable "external_network" {
   description = "Name of the external network providing Floating IP addresses."
   type        = string
@@ -31,4 +36,3 @@ variable "masters_count" {
 variable "trunk_support" {
   type = string
 }
-

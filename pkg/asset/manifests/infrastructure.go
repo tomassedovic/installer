@@ -96,6 +96,10 @@ func (i *Infrastructure) Generate(dependencies asset.Parents) error {
 		config.Status.PlatformStatus.Type = configv1.NonePlatformType
 	case openstack.Name:
 		config.Status.PlatformStatus.Type = configv1.OpenStackPlatformType
+		config.Status.PlatformStatus.OpenStack = &configv1.OpenStackPlatformStatus{
+			ApiIntIp: "172.24.0.5",
+			NodeDnsIp: "172.24.0.6",
+		}
 	case vsphere.Name:
 		config.Status.PlatformStatus.Type = configv1.VSpherePlatformType
 	default:

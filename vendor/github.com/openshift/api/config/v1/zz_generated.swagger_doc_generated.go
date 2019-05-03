@@ -780,12 +780,23 @@ func (InfrastructureStatus) SwaggerDoc() map[string]string {
 	return map_InfrastructureStatus
 }
 
+var map_OpenStackPlatformStatus = map[string]string{
+	"":          "OpenStackPlatformStatus holds the current status of the OpenStack infrastructure provider.",
+	"ApiIntIp":  "ApiIntIp is an IP address managed by the OpenStack provider backing the internal `api-int` record.",
+	"NodeDnsIp": "NodeDnsIp is the IP address for the internal DNS used by the nodes. Unlike the one managed by the DNS operator, `NodeDnsIp` provides name resolution for the nodes themselves.",
+}
+
+func (OpenStackPlatformStatus) SwaggerDoc() map[string]string {
+	return map_OpenStackPlatformStatus
+}
+
 var map_PlatformStatus = map[string]string{
-	"":      "PlatformStatus holds the current status specific to the underlying infrastructure provider of the current cluster. Since these are used at status-level for the underlying cluster, it is supposed that only one of the status structs is set.",
-	"type":  "type is the underlying infrastructure provider for the cluster. This value controls whether infrastructure automation such as service load balancers, dynamic volume provisioning, machine creation and deletion, and other integrations are enabled. If None, no infrastructure automation is enabled. Allowed values are \"AWS\", \"Azure\", \"BareMetal\", \"GCP\", \"Libvirt\", \"OpenStack\", \"VSphere\", and \"None\". Individual components may not support all platforms, and must handle unrecognized platforms as None if they do not support that platform.",
-	"aws":   "AWS contains settings specific to the Amazon Web Services infrastructure provider.",
-	"azure": "Azure contains settings specific to the Azure infrastructure provider.",
-	"gcp":   "GCP contains settings specific to the Google Cloud Platform infrastructure provider.",
+	"":          "PlatformStatus holds the current status specific to the underlying infrastructure provider of the current cluster. Since these are used at status-level for the underlying cluster, it is supposed that only one of the status structs is set.",
+	"type":      "type is the underlying infrastructure provider for the cluster. This value controls whether infrastructure automation such as service load balancers, dynamic volume provisioning, machine creation and deletion, and other integrations are enabled. If None, no infrastructure automation is enabled. Allowed values are \"AWS\", \"Azure\", \"BareMetal\", \"GCP\", \"Libvirt\", \"OpenStack\", \"VSphere\", and \"None\". Individual components may not support all platforms, and must handle unrecognized platforms as None if they do not support that platform.",
+	"aws":       "AWS contains settings specific to the Amazon Web Services infrastructure provider.",
+	"azure":     "Azure contains settings specific to the Azure infrastructure provider.",
+	"gcp":       "GCP contains settings specific to the Google Cloud Platform infrastructure provider.",
+	"openstack": "OpenStack contains settings specific to the OpenStack infrastructure provider.",
 }
 
 func (PlatformStatus) SwaggerDoc() map[string]string {

@@ -17,20 +17,19 @@ data "ignition_file" "hostname" {
     content = <<EOF
 ${var.cluster_id}-master-${count.index}
 EOF
-
   }
 }
 
 data "ignition_file" "clustervars" {
   filesystem = "root"
-  mode = "420" // 0644
-  path = "/etc/kubernetes/static-pod-resources/clustervars"
+  mode       = "420" // 0644
+  path       = "/etc/kubernetes/static-pod-resources/clustervars"
 
   content {
     content = <<EOF
-export FLOATING_IP=${var.lb_floating_ip}
+export API_VIP=${var.api_vip}
+export DNS_VIP=${var.dns_vip}
 export BOOTSTRAP_IP=${var.bootstrap_ip}
-${replace(join("\n", formatlist("export MASTER_FIXED_IPS_%s=%s", var.master_port_names, var.master_ips)), "${var.cluster_id}-master-port-", "")}
 EOF
   }
 }
@@ -65,6 +64,7 @@ resource "openstack_compute_instance_v2" "master_conf" {
   }
 
   metadata = {
+    # FIXME(mandre) shouldn't it be "${var.cluster_id}-master-${count.index}" ?
     Name = "${var.cluster_id}-master"
     # "kubernetes.io/cluster/${var.cluster_id}" = "owned"
     openshiftClusterID = var.cluster_id

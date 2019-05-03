@@ -1,3 +1,7 @@
+variable "api_vip" {
+  type = string
+}
+
 variable "base_image" {
   type = string
 }
@@ -14,6 +18,10 @@ variable "cluster_id" {
 variable "cluster_domain" {
   type        = string
   description = "The domain name of the cluster. All DNS records must be under this domain."
+}
+
+variable "dns_vip" {
+  type = string
 }
 
 variable "flavor_name" {
@@ -43,14 +51,6 @@ variable "master_port_ids" {
   description = "List of port ids for the master nodes"
 }
 
-variable "master_port_names" {
-  type = list(string)
-}
-
 variable "user_data_ign" {
-  type = string
-}
-
-variable "service_vm_fixed_ip" {
   type = string
 }

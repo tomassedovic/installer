@@ -10,6 +10,16 @@ import (
 	"github.com/openshift/installer/pkg/types"
 )
 
+func ignitionURL(installConfig *types.InstallConfig) string {
+	switch {
+	case installConfig.OpenStack != nil:
+		ip_address := "172.24.0.5"
+		return fmt.Sprintf("%s:22623", ip_address)
+	default:
+		return fmt.Sprintf("api-int.%s:22623", installConfig.ClusterDomain())
+	}
+}
+
 // pointerIgnitionConfig generates a config which references the remote config
 // served by the machine config server.
 func pointerIgnitionConfig(installConfig *types.InstallConfig, rootCA []byte, role string) *ignition.Config {
@@ -21,7 +31,7 @@ func pointerIgnitionConfig(installConfig *types.InstallConfig, rootCA []byte, ro
 					Source: func() *url.URL {
 						return &url.URL{
 							Scheme: "https",
-							Host:   fmt.Sprintf("api-int.%s:22623", installConfig.ClusterDomain()),
+							Host:   ignitionURL(installConfig),
 							Path:   fmt.Sprintf("/config/%s", role),
 						}
 					}().String(),

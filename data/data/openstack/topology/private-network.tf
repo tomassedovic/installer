@@ -1,7 +1,10 @@
 locals {
-  nodes_cidr_block   = cidrsubnet(var.cidr_block, 1, 0)
-  service_cidr_block = cidrsubnet(var.cidr_block, 1, 1)
+  nodes_cidr_block = var.cidr_block
+  api_vip = cidrhost(local.nodes_cidr_block, 5)
+  dns_vip = cidrhost(local.nodes_cidr_block, 6)
+  # TODO(mandre) add VIP for ingress
 }
+
 
 data "openstack_networking_network_v2" "external_network" {
   name       = var.external_network
@@ -12,15 +15,9 @@ data "openstack_networking_network_v2" "external_network" {
 resource "openstack_networking_network_v2" "openshift-private" {
   name           = "${var.cluster_id}-openshift"
   admin_state_up = "true"
+  # FIXME(mandre) why is it not taking my updated provider into account?
+  # dns_domain     = var.cluster_domain
   tags           = ["openshiftClusterID=${var.cluster_id}"]
-}
-
-resource "openstack_networking_subnet_v2" "service" {
-  name       = "${var.cluster_id}-service"
-  cidr       = local.service_cidr_block
-  ip_version = 4
-  network_id = openstack_networking_network_v2.openshift-private.id
-  tags       = ["openshiftClusterID=${var.cluster_id}"]
 }
 
 resource "openstack_networking_subnet_v2" "nodes" {
@@ -29,7 +26,11 @@ resource "openstack_networking_subnet_v2" "nodes" {
   ip_version      = 4
   network_id      = openstack_networking_network_v2.openshift-private.id
   tags            = ["openshiftClusterID=${var.cluster_id}"]
-  dns_nameservers = [openstack_networking_port_v2.service_port.all_fixed_ips[0]]
+  allocation_pool {
+    start = cidrhost(local.nodes_cidr_block, 10)
+    # FIXME(mandre) this should be the last available IP of the CIDR
+    end   = cidrhost(local.nodes_cidr_block, 50)
+  }
 }
 
 resource "openstack_networking_port_v2" "masters" {
@@ -41,8 +42,20 @@ resource "openstack_networking_port_v2" "masters" {
   security_group_ids = [openstack_networking_secgroup_v2.master.id]
   tags               = ["openshiftClusterID=${var.cluster_id}"]
 
+  extra_dhcp_option {
+    name = "domain-search"
+    value = var.cluster_domain
+  }
+
   fixed_ip {
     subnet_id = openstack_networking_subnet_v2.nodes.id
+  }
+
+  allowed_address_pairs {
+    ip_address = local.api_vip
+  }
+  allowed_address_pairs {
+    ip_address = local.dns_vip
   }
 }
 
@@ -62,28 +75,26 @@ resource "openstack_networking_port_v2" "bootstrap_port" {
   network_id         = openstack_networking_network_v2.openshift-private.id
   security_group_ids = [openstack_networking_secgroup_v2.master.id]
   tags               = ["openshiftClusterID=${var.cluster_id}"]
+  extra_dhcp_option {
+    name = "domain-search"
+    value = var.cluster_domain
+  }
 
   fixed_ip {
     subnet_id = openstack_networking_subnet_v2.nodes.id
   }
-}
 
-resource "openstack_networking_port_v2" "service_port" {
-  name = "${var.cluster_id}-service-port"
-
-  admin_state_up     = "true"
-  network_id         = openstack_networking_network_v2.openshift-private.id
-  security_group_ids = [openstack_networking_secgroup_v2.api.id]
-  tags               = ["openshiftClusterID=${var.cluster_id}"]
-
-  fixed_ip {
-    subnet_id = openstack_networking_subnet_v2.service.id
+  allowed_address_pairs {
+    ip_address = local.api_vip
   }
 }
 
-resource "openstack_networking_floatingip_associate_v2" "service_fip" {
+resource "openstack_networking_floatingip_associate_v2" "api_fip" {
   count       = length(var.lb_floating_ip) == 0 ? 0 : 1
-  port_id     = openstack_networking_port_v2.service_port.id
+  # NOTE(mandre) Is this OK to not have HA for external access via the FIP?
+  # FIP must point to a master node, otherwise the installer won't know when
+  # bootstrap node has completed
+  port_id     = openstack_networking_port_v2.masters[0].id
   floating_ip = var.lb_floating_ip
 }
 
@@ -92,11 +103,6 @@ resource "openstack_networking_router_v2" "openshift-external-router" {
   admin_state_up      = true
   external_network_id = data.openstack_networking_network_v2.external_network.id
   tags                = ["openshiftClusterID=${var.cluster_id}"]
-}
-
-resource "openstack_networking_router_interface_v2" "service_router_interface" {
-  router_id = openstack_networking_router_v2.openshift-external-router.id
-  subnet_id = openstack_networking_subnet_v2.service.id
 }
 
 resource "openstack_networking_router_interface_v2" "nodes_router_interface" {
