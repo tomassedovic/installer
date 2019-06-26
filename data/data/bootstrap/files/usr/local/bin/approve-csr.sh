@@ -2,6 +2,11 @@
 
 KUBECONFIG="${1}"
 
+if [ -f /usr/local/bin/haproxy-watcher.sh ]; then
+    echo "NOTE: We're on the service VM. Skipping approve-csr"
+    exit 0
+fi
+
 echo "Approving all CSR requests until bootstrapping is complete..."
 while [ ! -f /opt/openshift/.bootkube.done ]
 do
