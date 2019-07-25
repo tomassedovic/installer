@@ -89,6 +89,14 @@ resource "openstack_networking_port_v2" "bootstrap_port" {
   allowed_address_pairs {
     ip_address = var.api_int_ip
   }
+
+  allowed_address_pairs {
+    ip_address = var.node_dns_ip
+  }
+
+  allowed_address_pairs {
+    ip_address = var.ingress_ip
+  }
 }
 
 // Assign the floating IP to one of the masters.
