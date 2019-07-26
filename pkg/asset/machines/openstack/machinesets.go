@@ -33,7 +33,11 @@ func MachineSets(clusterID string, config *types.InstallConfig, pool *types.Mach
 	var machinesets []*clusterapi.MachineSet
 	az := ""
 	trunk := config.Platform.OpenStack.TrunkSupport
-	provider, err := provider(clusterID, platform, mpool, osImage, az, role, userDataSecret, trunk)
+	if config.Platform.OpenStack.IngressVIP == "" {
+		return nil, fmt.Errorf("IngressVIP is empty in machinesets.go")
+	}
+	allowedAddressPairs := []string{config.Platform.OpenStack.IngressVIP}
+	provider, err := provider(clusterID, platform, mpool, osImage, az, role, userDataSecret, trunk, allowedAddressPairs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create provider")
 	}
