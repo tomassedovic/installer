@@ -112,6 +112,11 @@ func provider(clusterID string, platform *openstack.Platform, mpool *openstack.M
 				Name: fmt.Sprintf("%s-%s", clusterID, role),
 			},
 		},
+		AllowedAddressPairs: []string{
+			platform.APIVIP,
+			platform.DNSVIP,
+			platform.IngressVIP,
+		},
 		Trunk: trunkSupportBoolean(trunk),
 		Tags: []string{
 			fmt.Sprintf("openshiftClusterID=%s", clusterID),
