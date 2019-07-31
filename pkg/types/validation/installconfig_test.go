@@ -451,6 +451,42 @@ func TestValidateInstallConfig(t *testing.T) {
 			expectedError: `^platform\.openstack\.cloud: Unsupported value: "": supported values: "test-cloud"$`,
 		},
 		{
+			name: "openstack API VIP not an IP",
+			installConfig: func() *types.InstallConfig {
+				c := validInstallConfig()
+				c.Platform = types.Platform{
+					OpenStack: validOpenStackPlatform(),
+				}
+				c.Platform.OpenStack.APIVIP = "test"
+				return c
+			}(),
+			expectedError: `^platform\.openstack\.apiVIP: Invalid value: "test": 'test' is not a valid IP$`,
+		},
+		{
+			name: "empty openstack API VIP",
+			installConfig: func() *types.InstallConfig {
+				c := validInstallConfig()
+				c.Platform = types.Platform{
+					OpenStack: validOpenStackPlatform(),
+				}
+				c.Platform.OpenStack.APIVIP = ""
+				return c
+			}(),
+			expectedError: `^platform\.openstack\.apiVIP: Invalid value: "": '' is not a valid IP$`,
+		},
+		{
+			name: "openstack API VIP outside of MachineCIDR",
+			installConfig: func() *types.InstallConfig {
+				c := validInstallConfig()
+				c.Platform = types.Platform{
+					OpenStack: validOpenStackPlatform(),
+				}
+				c.Platform.OpenStack.APIVIP = "1.2.3.4"
+				return c
+			}(),
+			expectedError: `^platform\.openstack\.apiVIP: Invalid value: "1.2.3.4": The VIP 1.2.3.4 is not part of the MachineCIDR 10.0.0.0/16$`,
+		},
+		{
 			name: "valid vsphere platform",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()

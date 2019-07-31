@@ -2,15 +2,18 @@ package validation
 
 import (
 	"errors"
+	"fmt"
+	"net"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/openshift/installer/pkg/types"
 	"github.com/openshift/installer/pkg/types/openstack"
 	"github.com/openshift/installer/pkg/validate"
 )
 
 // ValidatePlatform checks that the specified platform is valid.
-func ValidatePlatform(p *openstack.Platform, fldPath *field.Path, fetcher ValidValuesFetcher) field.ErrorList {
+func ValidatePlatform(p *openstack.Platform, n *types.Networking, fldPath *field.Path, fetcher ValidValuesFetcher) field.ErrorList {
 	allErrs := field.ErrorList{}
 	validClouds, err := fetcher.GetCloudNames()
 	if err != nil {
@@ -64,6 +67,10 @@ func ValidatePlatform(p *openstack.Platform, fldPath *field.Path, fetcher ValidV
 	// Validate VIP Values
 	if err := validate.IP(p.APIVIP); err != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("apiVIP"), p.APIVIP, err.Error()))
+	} else {
+		if n != nil && !n.MachineCIDR.IPNet.Contains(net.ParseIP(p.APIVIP)) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("apiVIP"), p.APIVIP, fmt.Errorf("The VIP %s is not part of the MachineCIDR %s", p.APIVIP, n.MachineCIDR.String()).Error()))
+		}
 	}
 
 	if err := validate.IP(p.IngressVIP); err != nil {
